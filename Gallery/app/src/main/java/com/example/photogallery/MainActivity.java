@@ -102,12 +102,17 @@ public class MainActivity extends AppCompatActivity {
         // Save a file: path for use with ACTION_VIEW intents
         currentPhotoPath = image.getAbsolutePath();
         return image;
-    }
+}
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
             Glide.with(this).load(currentPhotoPath).into(displayPhoto);
+        }
+        if (requestCode == PICK_REQUEST && resultCode == RESULT_OK) {
+            Uri selectedPhoto = data.getData();
+            Glide.with(this).load(selectedPhoto).into(displayPhoto);
+
         }
     }
 
