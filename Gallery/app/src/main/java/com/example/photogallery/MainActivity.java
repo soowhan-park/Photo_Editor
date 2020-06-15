@@ -7,28 +7,38 @@ import androidx.core.content.FileProvider;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     private ImageButton addPhoto;
     private ImageView displayPhoto;
+
     private Button editPhoto;
     private Button takePhoto;
+    private Button savePhoto;
+
+    private TextView fileLoc;
 
     // Set the request codes
     private static final int PICK_REQUEST = 1;
@@ -36,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
 
     //name of the file that is saved by the camera
     private String currentPhotoPath;
+    private OutputStream outputStream;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
         displayPhoto = findViewById(R.id.imgPhoto);
         editPhoto = findViewById(R.id.btnEdit);
         takePhoto = findViewById(R.id.btnTake);
+        savePhoto = findViewById(R.id.btnSave);
+        fileLoc = findViewById(R.id.tvLocation);
 
         addPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,14 +71,33 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        savePhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                BitmapDrawable drawable = (BitmapDrawable) displayPhoto.getDrawable();
+                Bitmap bitmap = drawable.getBitmap();
+                String path = currentPhotoPath;
+                File file = new File(path);
+                try{
+                    outputStream = new FileOutputStream(file);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
+                    Toast.makeText(getApplicationContext(), "Image Saved to internal",Toast.LENGTH_SHORT).show();
+                    outputStream.flush();
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
         takePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchTakePictureIntent();
             }
         });
-
     }
+
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // Ensure that there's a camera activity to handle the intent
@@ -98,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
                 ".jpg",         /* suffix */
                 storageDir      /* directory */
         );
-
         // Save a file: path for use with ACTION_VIEW intents
         currentPhotoPath = image.getAbsolutePath();
         return image;
@@ -108,14 +140,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
             Glide.with(this).load(currentPhotoPath).into(displayPhoto);
+            fileLoc.setText(currentPhotoPath);
         }
         if (requestCode == PICK_REQUEST && resultCode == RESULT_OK) {
             Uri selectedPhoto = data.getData();
             Glide.with(this).load(selectedPhoto).into(displayPhoto);
-
+            fileLoc.setText(selectedPhoto.toString());
         }
     }
-
 //    @Override
 //    public void onSaveInstanceState(@NonNull Bundle outState) {
 //        outState.putAll();
