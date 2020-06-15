@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,6 +31,16 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/*
+Photo Gallery App (진행사항)
+- 갤러리 또는 사진 캡쳐로 이미지 불러오고 저장하기
+- UCrop 오픈 라이브러리를 사용하여 간단한 포토 에디터 적용 (https://github.com/Yalantis/uCrop)
+
+To Do List
+- Intent를 사용하여 폴더 익스플로러 실행 후 저장하고픈 폴더 선택 (Intent -> Save file)
+- SQLite 안에 파일 정보 저장
+- 기타 자잘한 버그들 수정 (SaveInstanceState, Null(Empty Photo)
+ */
 public class MainActivity extends AppCompatActivity {
     private ImageButton addPhoto;
     private ImageView displayPhoto;
@@ -43,9 +54,11 @@ public class MainActivity extends AppCompatActivity {
     // Set the request codes
     private static final int PICK_REQUEST = 1;
     private static final int REQUEST_TAKE_PHOTO = 2;
+    private static final int IMG_GALLERY = 3;
 
     //name of the file that is saved by the camera
     private String currentPhotoPath;
+    private String SAMPLE_CROPPED_IMG_NAME = "SampleCrop";
     private OutputStream outputStream;
 
 
@@ -61,6 +74,13 @@ public class MainActivity extends AppCompatActivity {
         savePhoto = findViewById(R.id.btnSave);
         fileLoc = findViewById(R.id.tvLocation);
 
+        displayPhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(new Intent().setAction(Intent.ACTION_GET_CONTENT).setType("image/*"), IMG_GALLERY);
+            }
+        });
+
         addPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,9 +88,12 @@ public class MainActivity extends AppCompatActivity {
                 intent.setType("image/*");
                 intent.setAction(Intent.ACTION_GET_CONTENT);
                 startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_REQUEST);
+
+
             }
         });
 
+        //Link the photo on imageview to bitmap and save the image file using the path.
         savePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -78,6 +101,9 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap bitmap = drawable.getBitmap();
                 String path = currentPhotoPath;
                 File file = new File(path);
+//                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+//                intent.setType("image/*");
+//                startActivityForResult(intent, READ_REQUEST_CODE);
                 try{
                     outputStream = new FileOutputStream(file);
                     bitmap.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
@@ -97,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+
 
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -142,11 +170,57 @@ public class MainActivity extends AppCompatActivity {
             Glide.with(this).load(currentPhotoPath).into(displayPhoto);
             fileLoc.setText(currentPhotoPath);
         }
-        if (requestCode == PICK_REQUEST && resultCode == RESULT_OK) {
+        else if (requestCode == PICK_REQUEST && resultCode == RESULT_OK) {
             Uri selectedPhoto = data.getData();
             Glide.with(this).load(selectedPhoto).into(displayPhoto);
             fileLoc.setText(selectedPhoto.toString());
         }
+        else if (requestCode == IMG_GALLERY && resultCode == RESULT_OK) {
+            Uri imageUri = data.getData();
+            if (imageUri != null){
+                startCrop(imageUri);
+            }
+        }
+        else if (requestCode == UCrop.REQUEST_CROP && resultCode == RESULT_OK){
+            Uri imageUriResultCrop = UCrop.getOutput(data);
+            if (imageUriResultCrop != null){
+                displayPhoto.setImageURI(imageUriResultCrop);
+            }
+
+        }
+    }
+
+    private void startCrop(@NonNull Uri uri){
+        String destFileName = SAMPLE_CROPPED_IMG_NAME;
+        destFileName += ".jpg";
+        UCrop uCrop = UCrop.of(uri,Uri.fromFile(new File(getCacheDir(),destFileName)));
+        uCrop.withAspectRatio(1,1);
+//        uCrop.withAspectRatio(3,4);
+//        uCrop.useSourceImageAspectRatio();
+//        uCrop.withAspectRatio(2,3);
+//        uCrop.withAspectRatio(16,9);
+        uCrop.withAspectRatio(450,450);
+        uCrop.withOptions(getCropOptions());
+        uCrop.start(MainActivity.this);
+
+    }
+    private UCrop.Options getCropOptions(){
+        UCrop.Options options = new UCrop.Options();
+        options.setCompressionQuality(70);
+
+        //CompressType
+//        options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
+
+        //UI
+        options.setHideBottomControls(false);
+        options.setFreeStyleCropEnabled(true);
+
+        //Colors
+        options.setStatusBarColor(getResources().getColor(R.color.colorPrimary));
+        options.setToolbarColor(getResources().getColor(R.color.colorPrimaryDark));
+
+        options.setToolbarTitle("TESTING EDITOR");
+        return options;
     }
 //    @Override
 //    public void onSaveInstanceState(@NonNull Bundle outState) {
