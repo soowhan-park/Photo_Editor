@@ -88,8 +88,6 @@ public class MainActivity extends AppCompatActivity {
                 intent.setType("image/*");
                 intent.setAction(Intent.ACTION_GET_CONTENT);
                 startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_REQUEST);
-
-
             }
         });
 
@@ -101,18 +99,26 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap bitmap = drawable.getBitmap();
                 String path = currentPhotoPath;
                 File file = new File(path);
+                PhotoData photoData = new PhotoData();
 //                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
 //                intent.setType("image/*");
 //                startActivityForResult(intent, READ_REQUEST_CODE);
                 try{
+                    photoData = new PhotoData(-1, file.getName(), path);
+                    Toast.makeText(MainActivity.this, photoData.toString(),Toast.LENGTH_SHORT);
                     outputStream = new FileOutputStream(file);
                     bitmap.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
                     Toast.makeText(getApplicationContext(), "Image Saved to internal",Toast.LENGTH_SHORT).show();
                     outputStream.flush();
                     outputStream.close();
                 } catch (IOException e) {
+                    Toast.makeText(MainActivity.this, "Failed to save", Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
+                PhotoDBHelper photoDBHelper = new PhotoDBHelper(MainActivity.this);
+                boolean success = photoDBHelper.addOne(photoData);
+                Toast.makeText(MainActivity.this, "Success" + success, Toast.LENGTH_SHORT).show();
+
             }
         });
 
