@@ -1,4 +1,4 @@
-package com.example.photogallery;
+package com.example.photogallery.Database;
 
 /*
 사진 데이터를 데이터베이스에 저장하기 위한 클래스.

@@ -4,50 +4,42 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
-    <TextView
-        android:id="@+id/tvGallery"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="696dp"
-        android:text="Gallery"
-        android:textStyle="bold" />
+    android:orientation="vertical"
+    tools:context=".Activity.MainActivity">
 
     <TextView
         android:id="@+id/tvFeat"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="217dp"
+        android:layout_height="40dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="35dp"
-        android:layout_marginTop="55dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="0dp"
         android:text="Featured Style"
+        android:textSize="30sp"
         android:textStyle="bold" />
 
-    <ImageView
-        android:id="@+id/imgPhoto"
-        android:layout_width="350dp"
-        android:layout_height="465dp"
+    <ja.burhanrashid52.photoeditor.PhotoEditorView
+        android:id="@+id/photoEditorView"
+        android:layout_width="match_parent"
+        android:layout_height="571dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_centerInParent="true"
-        android:layout_marginStart="34dp"
-        android:layout_marginTop="108dp"
-        android:src="@drawable/ic_launcher_background" />
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="37dp"
+        app:photo_src="@drawable/ic_launcher_background" >
 
-    <Button
-        android:id="@+id/btnEdit"
-        android:layout_width="374dp"
-        android:layout_height="36dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginStart="21dp"
-        android:layout_marginBottom="45dp"
-        android:text="Edit your photo" />
+        <TextView
+            android:id="@+id/tvImg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="80dp"
+            android:layout_marginTop="19dp"
+            android:text="이미지를 추가해주세요"
+            android:textSize="30sp" />
+    </ja.burhanrashid52.photoeditor.PhotoEditorView>
 
     <TextView
         android:id="@+id/tvNav"
@@ -59,33 +51,24 @@
         android:layout_marginBottom="0dp"
         android:background="#000000" />
 
-    <ImageButton
-        android:id="@+id/imgBtnAddButton"
-        android:layout_width="32dp"
-        android:layout_height="33dp"
+    <Button
+        android:id="@+id/btnAddButton"
+        android:layout_width="51dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="2dp"
-        app:srcCompat="@drawable/addbutton" />
-
-    <Button
-        android:id="@+id/btnTake"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginEnd="77dp"
-        android:text="take" />
+        android:layout_marginBottom="-4dp"
+        android:drawableLeft="@drawable/add" />
 
     <Button
         android:id="@+id/btnSave"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="58dp"
+        android:layout_height="48dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="52dp"
         android:layout_marginBottom="-3dp"
-        android:text="save" />
+        android:drawableLeft="@drawable/save" />
 
     <TextView
         android:id="@+id/tvLocation"
@@ -94,8 +77,84 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="593dp"
-        android:layout_marginEnd="80dp"
+        android:layout_marginTop="579dp"
+        android:layout_marginEnd="92dp"
         android:text="Location" />
+
+    <Button
+        android:id="@+id/btnTake"
+        android:layout_width="51dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="51dp"
+        android:layout_marginBottom="-5dp"
+        android:drawableStart="@drawable/camera" />
+
+    <Button
+        android:id="@+id/btnCrop"
+        android:layout_width="77dp"
+        android:layout_height="56dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="25dp"
+        android:layout_marginBottom="60dp"
+        android:drawableStart="@drawable/crop" />
+
+    <Button
+        android:id="@+id/btnUndo"
+        android:layout_width="57dp"
+        android:layout_height="32dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="254dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginBottom="696dp"
+        android:drawableLeft="@drawable/undo" />
+
+    <Button
+        android:id="@+id/btnRedo"
+        android:layout_width="57dp"
+        android:layout_height="32dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="330dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginBottom="704dp"
+        android:drawableLeft="@drawable/redo" />
+
+    <Button
+        android:id="@+id/btnText"
+        android:layout_width="78dp"
+        android:layout_height="51dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="118dp"
+        android:layout_marginBottom="64dp"
+        android:drawableLeft="@drawable/ttext" />
+
+    <Button
+        android:id="@+id/btnDraw"
+        android:layout_width="63dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="219dp"
+        android:layout_marginBottom="63dp"
+        android:drawableLeft="@drawable/pencil" />
+
+    <Button
+        android:id="@+id/btnErase"
+        android:layout_width="74dp"
+        android:layout_height="57dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="297dp"
+        android:layout_marginBottom="57dp"
+        android:drawableLeft="@drawable/eraser" />
 
 </RelativeLayout>

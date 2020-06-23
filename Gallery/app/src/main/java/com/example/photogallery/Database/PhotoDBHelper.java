@@ -1,4 +1,4 @@
-package com.example.photogallery;
+package com.example.photogallery.Database;
 
 import android.content.ContentValues;
 import android.content.Context;
