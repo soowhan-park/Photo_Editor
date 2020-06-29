@@ -16,6 +16,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.photogallery.Database.PhotoDBHelper;
+import com.example.photogallery.Database.PhotoData;
 import com.example.photogallery.Fragments.BrushOptions;
 import com.example.photogallery.Fragments.TextEditor;
 import com.example.photogallery.R;
@@ -84,7 +86,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         btnUndo = findViewById(R.id.btnUndo);
 
         //Button onClickListeners
-
         btnDraw.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -220,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
 }
 
     private void saveImage() {
-        File file = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        final File file = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                 + File.separator + ""
                 + System.currentTimeMillis() + ".png");
         Log.d("fileLoc",getExternalFilesDir(Environment.DIRECTORY_PICTURES).toString());
@@ -231,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
 //                    .setTransparencyEnabled(true)
 //                    .build();
 //
-//            mPhotoEditor.saveAsFile(file.getAbsolutePath(), saveSettings, new PhotoEditor.OnSaveListener() {
+//            mPhotoEditor.saveAsFile(file.getAbsolutePa th(), saveSettings, new PhotoEditor.OnSaveListener() {
 //                @Override
 //                public void onSuccess(@NonNull String imagePath) {
 //                    Uri mSaveImageUri = Uri.fromFile(new File(imagePath));
@@ -241,6 +242,12 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             mPhotoEditor.saveAsFile(file.getAbsolutePath(), new PhotoEditor.OnSaveListener() {
                 @Override
                 public void onSuccess(@NonNull String imagePath) {
+                    //Save path and image file name to database
+                    PhotoData photoData = new PhotoData(-1, selectedPhoto.toString(), file.getName());
+                    PhotoDBHelper photoDBHelper = new PhotoDBHelper(MainActivity.this);
+                    boolean success = photoDBHelper.addOne(photoData);
+                    Toast.makeText(MainActivity.this, photoData.toString(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Success=" + success, Toast.LENGTH_SHORT).show();
                     Uri mSaveImageUri = Uri.fromFile(new File(imagePath));
                     mPhotoEditorView.getSource().setImageURI(mSaveImageUri);
                     Log.d("aftersave",mSaveImageUri.toString());
@@ -273,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    fileLoc.setText(selectedPhoto.toString());
+                  //  fileLoc.setText(selectedPhoto.toString());
                     break;
                 case PICK_REQUEST:
                     try {

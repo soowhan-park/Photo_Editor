@@ -31,14 +31,13 @@ public class PhotoDBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
     }
 
     public boolean addOne (PhotoData photoData){
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
 
-        cv.put(COLUMN_PHOTO_ID, photoData.getId());
+        cv.put(COLUMN_PHOTO_ID, photoData.getName());
         cv.put(COLUMN_PHOTO_PATH, photoData.getPath());
         long insert = db.insert(PHOTO_TABLE,null,cv);
         if (insert == -1 ){
