@@ -4,10 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,28 +13,22 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
 import com.example.photogallery.Fragments.BrushOptions;
 import com.example.photogallery.Fragments.TextEditor;
 import com.example.photogallery.R;
 import com.yalantis.ucrop.UCrop;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import ja.burhanrashid52.photoeditor.OnPhotoEditorListener;
 import ja.burhanrashid52.photoeditor.PhotoEditor;
 import ja.burhanrashid52.photoeditor.PhotoEditorView;
-import ja.burhanrashid52.photoeditor.SaveSettings;
 import ja.burhanrashid52.photoeditor.TextStyleBuilder;
 import ja.burhanrashid52.photoeditor.ViewType;
 
@@ -60,12 +52,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     // Set the request codes
     private static final int PICK_REQUEST = 1;
     private static final int REQUEST_TAKE_PHOTO = 2;
-    private static final int IMG_GALLERY = 3;
-
-    //variables for camera
-    private String currentPhotoPath;
-    private String SAMPLE_CROPPED_IMG_NAME = "SampleCrop";
-    private OutputStream outputStream;
 
     //URI for the displayed photo on image view
     private Uri selectedPhoto;
@@ -96,7 +82,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         btnDraw = findViewById(R.id.btnDraw);
         btnRedo = findViewById(R.id.btnRedo);
         btnUndo = findViewById(R.id.btnUndo);
-
 
         //Button onClickListeners
 
@@ -157,11 +142,10 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             public void onClick(View v) {
                 Intent intent = new Intent();
                 intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
+                intent.setAction(Intent.ACTION_PICK);
                 startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_REQUEST);
             }
         });
-
 
         savePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -232,7 +216,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                 storageDir      /* directory */
         );
         // Save a file: path for use with ACTION_VIEW intents
-        currentPhotoPath = image.getAbsolutePath();
         return image;
 }
 
@@ -240,19 +223,27 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         File file = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                 + File.separator + ""
                 + System.currentTimeMillis() + ".png");
+        Log.d("fileLoc",getExternalFilesDir(Environment.DIRECTORY_PICTURES).toString());
         try {
             file.createNewFile();
-
-            SaveSettings saveSettings = new SaveSettings.Builder()
-                    .setClearViewsEnabled(true)
-                    .setTransparencyEnabled(true)
-                    .build();
-
-            mPhotoEditor.saveAsFile(file.getAbsolutePath(), saveSettings, new PhotoEditor.OnSaveListener() {
+//            SaveSettings saveSettings = new SaveSettings.Builder()
+//                    .setClearViewsEnabled(true)
+//                    .setTransparencyEnabled(true)
+//                    .build();
+//
+//            mPhotoEditor.saveAsFile(file.getAbsolutePath(), saveSettings, new PhotoEditor.OnSaveListener() {
+//                @Override
+//                public void onSuccess(@NonNull String imagePath) {
+//                    Uri mSaveImageUri = Uri.fromFile(new File(imagePath));
+//                    mPhotoEditorView.getSource().setImageURI(mSaveImageUri);
+//                    Toast.makeText(MainActivity.this, "저장 성공", Toast.LENGTH_SHORT).show();
+//                }
+            mPhotoEditor.saveAsFile(file.getAbsolutePath(), new PhotoEditor.OnSaveListener() {
                 @Override
                 public void onSuccess(@NonNull String imagePath) {
                     Uri mSaveImageUri = Uri.fromFile(new File(imagePath));
                     mPhotoEditorView.getSource().setImageURI(mSaveImageUri);
+                    Log.d("aftersave",mSaveImageUri.toString());
                     Toast.makeText(MainActivity.this, "저장 성공", Toast.LENGTH_SHORT).show();
                 }
 
@@ -277,9 +268,8 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     mPhotoEditor.clearAllViews();
                     try {
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedPhoto);
-                        Glide.with(this).load(bitmap).into(mPhotoEditorView.getSource());
+                        mPhotoEditorView.getSource().setImageBitmap(bitmap);
                         isImage.setVisibility(View.GONE);
-//                        mPhotoEditorView.getSource().setImageBitmap(bitmap);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -289,9 +279,10 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     try {
                         mPhotoEditor.clearAllViews();
                         Uri uri = data.getData();
+                        Log.d("pictag", uri.toString());
                         selectedPhoto = uri;
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
-                        Glide.with(this).load(bitmap).into(mPhotoEditorView.getSource());
+                        mPhotoEditorView.getSource().setImageBitmap(bitmap);
                         isImage.setVisibility(View.GONE);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -370,22 +361,18 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
 
     @Override
     public void onAddViewListener(ViewType viewType, int numberOfAddedViews) {
-
     }
 
     @Override
     public void onRemoveViewListener(ViewType viewType, int numberOfAddedViews) {
-
     }
 
     @Override
     public void onStartViewChangeListener(ViewType viewType) {
-
     }
 
     @Override
     public void onStopViewChangeListener(ViewType viewType) {
-
     }
 
     //Save and restore the image after the cycle is killed
