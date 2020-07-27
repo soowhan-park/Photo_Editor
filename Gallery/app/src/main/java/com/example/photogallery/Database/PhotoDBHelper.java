@@ -26,7 +26,6 @@ public class PhotoDBHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         String createTableStatement = "CREATE TABLE " + PHOTO_TABLE + " (" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + COLUMN_PHOTO_ID + " TEXT, " + COLUMN_PHOTO_PATH + " TEXT)";
         db.execSQL(createTableStatement);
-
     }
 
     @Override

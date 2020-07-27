@@ -7,12 +7,15 @@ import androidx.core.content.FileProvider;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,13 +23,34 @@ import com.example.photogallery.Database.PhotoDBHelper;
 import com.example.photogallery.Database.PhotoData;
 import com.example.photogallery.Fragments.BrushOptions;
 import com.example.photogallery.Fragments.TextEditor;
+import com.example.photogallery.GoogleVisionUtils.PackageManagerUtils;
 import com.example.photogallery.R;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.vision.v1.Vision;
+import com.google.api.services.vision.v1.VisionRequest;
+import com.google.api.services.vision.v1.VisionRequestInitializer;
+import com.google.api.services.vision.v1.model.AnnotateImageRequest;
+import com.google.api.services.vision.v1.model.BatchAnnotateImagesRequest;
+import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
+import com.google.api.services.vision.v1.model.EntityAnnotation;
+import com.google.api.services.vision.v1.model.Image;
+import com.google.api.services.vision.v1.model.Feature;
+
 import com.yalantis.ucrop.UCrop;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 import ja.burhanrashid52.photoeditor.OnPhotoEditorListener;
 import ja.burhanrashid52.photoeditor.PhotoEditor;
@@ -35,22 +59,24 @@ import ja.burhanrashid52.photoeditor.TextStyleBuilder;
 import ja.burhanrashid52.photoeditor.ViewType;
 
 
-public class MainActivity extends AppCompatActivity implements BrushOptions.Properties, OnPhotoEditorListener {
-    private Button addPhoto;
 
-    private Button takePhoto;
-    private Button savePhoto;
+public class MainActivity extends AppCompatActivity implements BrushOptions.Properties, OnPhotoEditorListener {
+    private ImageView addPhoto;
+
+    private ImageView takePhoto;
+    private ImageView savePhoto;
 
     //Editing buttons
-    private Button btnCrop;
-    private Button btnText;
-    private Button btnErase;
-    private Button btnDraw;
-    private Button btnUndo;
-    private Button btnRedo;
+    private ImageView btnCrop;
+    private ImageView btnText;
+    private ImageView btnErase;
+    private ImageView btnDraw;
+    private ImageView btnUndo;
+    private ImageView btnRedo;
 
-    private TextView fileLoc;
     private TextView isImage;
+    private TextView mImageDetails;
+
     // Set the request codes
     private static final int PICK_REQUEST = 1;
     private static final int REQUEST_TAKE_PHOTO = 2;
@@ -65,17 +91,27 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     // Brush tools fragments
     private BrushOptions mBrushOptions;
 
+    //API Key, Google Vision Setups
+    private static final String CLOUD_VISION_API_KEY = "AIzaSyCcu8nNolVAROzgcUn0zOquyrgnwAUM1Jk";
+    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String ANDROID_PACKAGE_HEADER = "X-Android-Package";
+    private static final String ANDROID_CERT_HEADER = "X-Android-Cert";
+    private static final int MAX_LABEL_RESULTS = 10;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
         addPhoto = findViewById(R.id.btnAddButton);
         takePhoto = findViewById(R.id.btnTake);
         savePhoto = findViewById(R.id.btnSave);
-        fileLoc = findViewById(R.id.tvLocation);
         isImage = findViewById(R.id.tvImg);
         mPhotoEditorView = findViewById(R.id.photoEditorView);
+        mImageDetails = findViewById(R.id.image_details);
 
         //Edit buttons
         btnCrop = findViewById(R.id.btnCrop);
@@ -100,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                 mPhotoEditor.undo();
             }
         });
+
 
         btnCrop.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -171,7 +208,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
        // Typeface mTextRobotoTf = ResourcesCompat.getFont(this, R.font.roboto_medium);
 
 //loading font from assest
-        //Typeface mEmojiTypeFace = Typeface.createFromAsset(getAssets(), "emojione-android.ttf");
 
         mPhotoEditor = new PhotoEditor.Builder(this, mPhotoEditorView)
                 .setPinchTextScalable(true)
@@ -276,6 +312,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     try {
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedPhoto);
                         mPhotoEditorView.getSource().setImageBitmap(bitmap);
+                        callCloudVision(bitmap);
                         isImage.setVisibility(View.GONE);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -286,9 +323,9 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     try {
                         mPhotoEditor.clearAllViews();
                         Uri uri = data.getData();
-                        Log.d("pictag", uri.toString());
                         selectedPhoto = uri;
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                        callCloudVision(bitmap);
                         mPhotoEditorView.getSource().setImageBitmap(bitmap);
                         isImage.setVisibility(View.GONE);
                     } catch (IOException e) {
@@ -300,6 +337,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     try {
                             Bitmap b_map = MediaStore.Images.Media.getBitmap(getContentResolver(), resultUri);
                             mPhotoEditorView.getSource().setImageBitmap(b_map);
+                        callCloudVision(b_map);
                             isImage.setVisibility(View.GONE);
                             selectedPhoto = resultUri;
                         } catch (IOException e) {
@@ -308,6 +346,136 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             }
         }
     }
+
+    private Vision.Images.Annotate prepareAnnotationRequest(Bitmap bitmap) throws IOException {
+        HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
+        JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+
+        VisionRequestInitializer requestInitializer =
+                new VisionRequestInitializer(CLOUD_VISION_API_KEY) {
+                    /**
+                     * We override this so we can inject important identifying fields into the HTTP
+                     * headers. This enables use of a restricted cloud platform API key.
+                     */
+                    @Override
+                    protected void initializeVisionRequest(VisionRequest<?> visionRequest)
+                            throws IOException {
+                        super.initializeVisionRequest(visionRequest);
+
+                        String packageName = getPackageName();
+                        visionRequest.getRequestHeaders().set(ANDROID_PACKAGE_HEADER, packageName);
+
+                        String sig = PackageManagerUtils.getSignature(getPackageManager(), packageName);
+
+                        visionRequest.getRequestHeaders().set(ANDROID_CERT_HEADER, sig);
+                    }
+                };
+
+        Vision.Builder builder = new Vision.Builder(httpTransport, jsonFactory, null);
+        builder.setVisionRequestInitializer(requestInitializer);
+
+        Vision vision = builder.build();
+
+        BatchAnnotateImagesRequest batchAnnotateImagesRequest = new BatchAnnotateImagesRequest();
+        batchAnnotateImagesRequest.setRequests(new ArrayList<AnnotateImageRequest>() {{
+            AnnotateImageRequest annotateImageRequest = new AnnotateImageRequest();
+
+            // Add the image
+            Image base64EncodedImage = new Image();
+            // Convert the bitmap to a JPEG
+            // Just in case it's a format that Android understands but Cloud Vision
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+
+            // Base64 encode the JPEG
+            base64EncodedImage.encodeContent(imageBytes);
+            annotateImageRequest.setImage(base64EncodedImage);
+
+            // add the features we want
+            annotateImageRequest.setFeatures(new ArrayList<Feature>() {{
+                Feature labelDetection = new Feature();
+                labelDetection.setType("LABEL_DETECTION");
+                labelDetection.setMaxResults(MAX_LABEL_RESULTS);
+                add(labelDetection);
+            }});
+
+            // Add the list of one thing to the request
+            add(annotateImageRequest);
+        }});
+
+        Vision.Images.Annotate annotateRequest =
+                vision.images().annotate(batchAnnotateImagesRequest);
+        // Due to a bug: requests to Vision API containing large images fail when GZipped.
+        annotateRequest.setDisableGZipContent(true);
+        Log.d(TAG, "created Cloud Vision request object, sending request");
+
+        return annotateRequest;
+    }
+
+    private static class LableDetectionTask extends AsyncTask<Object, Void, String> {
+        private final WeakReference<MainActivity> mActivityWeakReference;
+        private Vision.Images.Annotate mRequest;
+
+        LableDetectionTask(MainActivity activity, Vision.Images.Annotate annotate) {
+            mActivityWeakReference = new WeakReference<>(activity);
+            mRequest = annotate;
+        }
+
+        @Override
+        protected String doInBackground(Object... params) {
+            try {
+                Log.d(TAG, "created Cloud Vision request object, sending request");
+                BatchAnnotateImagesResponse response = mRequest.execute();
+                return convertResponseToString(response);
+
+            } catch (GoogleJsonResponseException e) {
+                Log.d(TAG, "failed to make API request because " + e.getContent());
+            } catch (IOException e) {
+                Log.d(TAG, "failed to make API request because of other IOException " +
+                        e.getMessage());
+            }
+            return "Cloud Vision API request failed. Check logs for details.";
+        }
+
+        protected void onPostExecute(String result) {
+            MainActivity activity = mActivityWeakReference.get();
+            if (activity != null && !activity.isFinishing()) {
+                TextView imageDetail = activity.findViewById(R.id.image_details);
+                imageDetail.setText(result);
+            }
+        }
+    }
+
+    private static String convertResponseToString(BatchAnnotateImagesResponse response) {
+        StringBuilder message = new StringBuilder("I found these things:\n\n");
+
+        List<EntityAnnotation> labels = response.getResponses().get(0).getLabelAnnotations();
+        if (labels != null) {
+            for (EntityAnnotation label : labels) {
+                message.append(String.format(Locale.US, "%.3f: %s", label.getScore(), label.getDescription()));
+                message.append("\n");
+            }
+        } else {
+            message.append("nothing");
+        }
+        return message.toString();
+    }
+
+    private void callCloudVision(final Bitmap bitmap) {
+        // Switch text to loading
+        mImageDetails.setText(R.string.loading_message);
+
+        // Do the real work in an async task, because we need to use the network anyway
+        try {
+            AsyncTask<Object, Void, String> labelDetectionTask = new LableDetectionTask(this, prepareAnnotationRequest(bitmap));
+            labelDetectionTask.execute();
+        } catch (IOException e) {
+            Log.d(TAG, "failed to make API request because of other IOException " +
+                    
+                    e.getMessage());
+        }
+    }
+
 
     @Override
     public void onColorChanged(int colorCode) {
@@ -324,10 +492,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                 + File.separator + ""
                 + System.currentTimeMillis() + ".png")));
         uCrop.withAspectRatio(1,1);
-//        uCrop.withAspectRatio(3,4);
-//        uCrop.useSourceImageAspectRatio();
-//        uCrop.withAspectRatio(2,3);
-//        uCrop.withAspectRatio(16,9);
         uCrop.withAspectRatio(450,450);
         uCrop.withOptions(getCropOptions());
         uCrop.start(MainActivity.this);

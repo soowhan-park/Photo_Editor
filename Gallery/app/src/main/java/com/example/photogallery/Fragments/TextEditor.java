@@ -115,7 +115,6 @@ public class TextEditor extends DialogFragment {
                 }
             }
         });
-
     }
 
     //Callback to listener if user is done with text editing
