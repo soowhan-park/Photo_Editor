@@ -16,8 +16,8 @@
         android:layout_alignParentEnd="true"
         android:layout_centerInParent="true"
         android:layout_gravity="center"
-        android:layout_marginTop="436dp"
-        android:layout_marginEnd="131dp"
+        android:layout_marginTop="428dp"
+        android:layout_marginEnd="156dp"
         app:SpinKit_Color="@color/colorAccent" />
 
     <ImageView

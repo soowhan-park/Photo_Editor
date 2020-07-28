@@ -1,9 +1,5 @@
 package com.example.photogallery.Activity;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
-
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -14,10 +10,13 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
 import com.example.photogallery.Database.PhotoDBHelper;
 import com.example.photogallery.Database.PhotoData;
@@ -37,9 +36,8 @@ import com.google.api.services.vision.v1.model.AnnotateImageRequest;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesRequest;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
 import com.google.api.services.vision.v1.model.EntityAnnotation;
-import com.google.api.services.vision.v1.model.Image;
 import com.google.api.services.vision.v1.model.Feature;
-
+import com.google.api.services.vision.v1.model.Image;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.ByteArrayOutputStream;
@@ -176,6 +174,16 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         });
 
         addPhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setType("image/*");
+                intent.setAction(Intent.ACTION_PICK);
+                startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_REQUEST);
+            }
+        });
+
+        isImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
