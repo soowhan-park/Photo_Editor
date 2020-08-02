@@ -2,19 +2,25 @@ package com.example.photogallery.Activity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
@@ -22,6 +28,7 @@ import com.example.photogallery.Database.PhotoDBHelper;
 import com.example.photogallery.Database.PhotoData;
 import com.example.photogallery.Fragments.BrushOptions;
 import com.example.photogallery.Fragments.TextEditor;
+import com.example.photogallery.GoogleVisionUtils.LabelDetectionTask;
 import com.example.photogallery.GoogleVisionUtils.PackageManagerUtils;
 import com.example.photogallery.R;
 import com.google.api.client.extensions.android.http.AndroidHttp;
@@ -43,6 +50,7 @@ import com.yalantis.ucrop.UCrop;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -75,6 +83,9 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private TextView isImage;
     private TextView mImageDetails;
 
+    private static CheckBox checkBox;
+
+
     // Set the request codes
     private static final int PICK_REQUEST = 1;
     private static final int REQUEST_TAKE_PHOTO = 2;
@@ -95,6 +106,10 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private static final String ANDROID_PACKAGE_HEADER = "X-Android-Package";
     private static final String ANDROID_CERT_HEADER = "X-Android-Cert";
     private static final int MAX_LABEL_RESULTS = 10;
+
+    private static String[] tags;
+    private static int counter;
+    private static int i = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,6 +133,8 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         btnDraw = findViewById(R.id.btnDraw);
         btnRedo = findViewById(R.id.btnRedo);
         btnUndo = findViewById(R.id.btnUndo);
+
+        checkBox = findViewById(R.id.checkBox);
 
         //Button onClickListeners
         btnDraw.setOnClickListener(new View.OnClickListener() {
@@ -180,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                 intent.setType("image/*");
                 intent.setAction(Intent.ACTION_PICK);
                 startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_REQUEST);
+
             }
         });
 
@@ -200,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     Toast.makeText(MainActivity.this, "이미지를 추가하세요", Toast.LENGTH_SHORT).show();
                 else {
                     saveImage();
+
                 }
             }
         });
@@ -250,6 +269,14 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         }
     }
 
+    private static int exifToDegrees(int exifOrientation) {
+        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) { return 90; }
+        else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {  return 180; }
+        else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {  return 270; }
+        return 0;
+    }
+
+
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -294,6 +321,8 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     Toast.makeText(MainActivity.this, "Success=" + success, Toast.LENGTH_SHORT).show();
                     Uri mSaveImageUri = Uri.fromFile(new File(imagePath));
                     mPhotoEditorView.getSource().setImageURI(mSaveImageUri);
+                    mPhotoEditorView.getSource().setImageBitmap(null);
+                    isImage.setVisibility(View.VISIBLE);
                     Log.d("aftersave",mSaveImageUri.toString());
                     Toast.makeText(MainActivity.this, "저장 성공", Toast.LENGTH_SHORT).show();
                 }
@@ -310,6 +339,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -321,11 +351,25 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedPhoto);
                         mPhotoEditorView.getSource().setImageBitmap(bitmap);
                         callCloudVision(bitmap);
+                        try (InputStream inputStream = getContentResolver().openInputStream(selectedPhoto)) {
+                            assert inputStream != null;
+                            ExifInterface exif = new ExifInterface(inputStream);
+                            int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            int rotationInDegrees = exifToDegrees(rotation);
+                            mPhotoEditorView.getSource().setRotation(rotationInDegrees);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         isImage.setVisibility(View.GONE);
+                        btnCrop.setVisibility(View.VISIBLE);
+                        btnErase.setVisibility(View.VISIBLE);
+                        btnText.setVisibility(View.VISIBLE);
+                        btnDraw.setVisibility(View.VISIBLE);
+                        btnRedo.setVisibility(View.VISIBLE);
+                        btnUndo.setVisibility(View.VISIBLE);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                  //  fileLoc.setText(selectedPhoto.toString());
                     break;
                 case PICK_REQUEST:
                     try {
@@ -336,6 +380,22 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                         callCloudVision(bitmap);
                         mPhotoEditorView.getSource().setImageBitmap(bitmap);
                         isImage.setVisibility(View.GONE);
+                        btnCrop.setVisibility(View.VISIBLE);
+                        btnErase.setVisibility(View.VISIBLE);
+                        btnText.setVisibility(View.VISIBLE);
+                        btnDraw.setVisibility(View.VISIBLE);
+                        btnRedo.setVisibility(View.VISIBLE);
+                        btnUndo.setVisibility(View.VISIBLE);
+                        //Fixed issue when the image is printed in landscape mode
+                        try (InputStream inputStream = getContentResolver().openInputStream(uri)) {
+                            assert inputStream != null;
+                            ExifInterface exif = new ExifInterface(inputStream);
+                            int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            int rotationInDegrees = exifToDegrees(rotation);
+                            mPhotoEditorView.getSource().setRotation(rotationInDegrees);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -345,7 +405,16 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     try {
                             Bitmap b_map = MediaStore.Images.Media.getBitmap(getContentResolver(), resultUri);
                             mPhotoEditorView.getSource().setImageBitmap(b_map);
-                        callCloudVision(b_map);
+                            callCloudVision(b_map);
+                        try (InputStream inputStream = getContentResolver().openInputStream(resultUri)) {
+                            assert inputStream != null;
+                            ExifInterface exif = new ExifInterface(inputStream);
+                            int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            int rotationInDegrees = exifToDegrees(rotation);
+                            mPhotoEditorView.getSource().setRotation(rotationInDegrees);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                             isImage.setVisibility(View.GONE);
                             selectedPhoto = resultUri;
                         } catch (IOException e) {
@@ -355,7 +424,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         }
     }
 
-    private Vision.Images.Annotate prepareAnnotationRequest(Bitmap bitmap) throws IOException {
+    private Vision.Images.Annotate prepareAnnotationRequest(final Bitmap bitmap) throws IOException {
         HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
 
@@ -393,6 +462,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             // Convert the bitmap to a JPEG
             // Just in case it's a format that Android understands but Cloud Vision
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
             byte[] imageBytes = byteArrayOutputStream.toByteArray();
 
             // Base64 encode the JPEG
@@ -420,49 +490,23 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         return annotateRequest;
     }
 
-    private static class LableDetectionTask extends AsyncTask<Object, Void, String> {
-        private final WeakReference<MainActivity> mActivityWeakReference;
-        private Vision.Images.Annotate mRequest;
-
-        LableDetectionTask(MainActivity activity, Vision.Images.Annotate annotate) {
-            mActivityWeakReference = new WeakReference<>(activity);
-            mRequest = annotate;
-        }
-
-        @Override
-        protected String doInBackground(Object... params) {
-            try {
-                Log.d(TAG, "created Cloud Vision request object, sending request");
-                BatchAnnotateImagesResponse response = mRequest.execute();
-                return convertResponseToString(response);
-
-            } catch (GoogleJsonResponseException e) {
-                Log.d(TAG, "failed to make API request because " + e.getContent());
-            } catch (IOException e) {
-                Log.d(TAG, "failed to make API request because of other IOException " +
-                        e.getMessage());
-            }
-            return "Cloud Vision API request failed. Check logs for details.";
-        }
-
-        protected void onPostExecute(String result) {
-            MainActivity activity = mActivityWeakReference.get();
-            if (activity != null && !activity.isFinishing()) {
-                TextView imageDetail = activity.findViewById(R.id.image_details);
-                imageDetail.setText(result);
-            }
-        }
-    }
-
-    private static String convertResponseToString(BatchAnnotateImagesResponse response) {
-        StringBuilder message = new StringBuilder("I found these things:\n\n");
-
+    public static String convertResponseToString(BatchAnnotateImagesResponse response) {
+        StringBuilder message = new StringBuilder("분석 결과:\n\n");
         List<EntityAnnotation> labels = response.getResponses().get(0).getLabelAnnotations();
         if (labels != null) {
-            for (EntityAnnotation label : labels) {
-                message.append(String.format(Locale.US, "%.3f: %s", label.getScore(), label.getDescription()));
-                message.append("\n");
+            counter = labels.size();
+            tags = new String[counter];
+            for (i =0; i < 5; i++) {
+                if (labels.get(i).getDescription() == null || labels.get(i).getScore() == null)
+                    break;
+                else{
+                    message.append(String.format(Locale.US, "%.3f: %s", labels.get(i).getScore(), labels.get(i).getDescription()));
+                    message.append("\n");
+                    tags[i] = labels.get(i).getDescription();
+                }
             }
+            Log.d("tags",tags[0] + tags[1]);
+            i = 0;
         } else {
             message.append("nothing");
         }
@@ -472,18 +516,14 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private void callCloudVision(final Bitmap bitmap) {
         // Switch text to loading
         mImageDetails.setText(R.string.loading_message);
-
         // Do the real work in an async task, because we need to use the network anyway
         try {
-            AsyncTask<Object, Void, String> labelDetectionTask = new LableDetectionTask(this, prepareAnnotationRequest(bitmap));
+            AsyncTask<Object, Void, String> labelDetectionTask = new LabelDetectionTask(this, prepareAnnotationRequest(bitmap));
             labelDetectionTask.execute();
         } catch (IOException e) {
-            Log.d(TAG, "failed to make API request because of other IOException " +
-                    
-                    e.getMessage());
+            Log.d(TAG, "failed to make API request because of other IOException " + e.getMessage());
         }
     }
-
 
     @Override
     public void onColorChanged(int colorCode) {

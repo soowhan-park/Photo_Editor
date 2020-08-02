@@ -10,7 +10,7 @@
     <ja.burhanrashid52.photoeditor.PhotoEditorView
         android:id="@+id/photoEditorView"
         android:layout_width="match_parent"
-        android:layout_height="632dp"
+        android:layout_height="550dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="0dp"
@@ -27,17 +27,6 @@
             android:fontFamily="@font/noto_sans"
             android:text="이미지를 추가하십시오"
             android:textSize="30sp" />
-
-        <TextView
-            android:id="@+id/image_details"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginEnd="183dp"
-            android:layout_marginBottom="38dp"
-            android:text="details"
-            android:visibility="visible" />
 
     </ja.burhanrashid52.photoeditor.PhotoEditorView>
 
@@ -61,6 +50,8 @@
         android:layout_marginStart="373dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="59dp"
+        android:visibility="invisible"
+        tools:visibility="visible"
         app:srcCompat="@drawable/ic_redo" />
 
     <ImageView
@@ -71,7 +62,9 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="8dp"
         android:layout_marginBottom="58dp"
-        app:srcCompat="@drawable/ic_draw" />
+        android:visibility="invisible"
+        app:srcCompat="@drawable/ic_draw"
+        tools:visibility="visible" />
 
     <ImageView
         android:id="@+id/btnText"
@@ -81,6 +74,8 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="157dp"
         android:layout_marginBottom="58dp"
+        android:visibility="invisible"
+        tools:visibility="visible"
         app:srcCompat="@drawable/ic_inserttext" />
 
     <ImageView
@@ -91,6 +86,8 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="232dp"
         android:layout_marginBottom="58dp"
+        android:visibility="invisible"
+        tools:visibility="visible"
         app:srcCompat="@drawable/ic_crop" />
 
     <ImageView
@@ -101,6 +98,8 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="304dp"
         android:layout_marginBottom="58dp"
+        android:visibility="invisible"
+        tools:visibility="visible"
         app:srcCompat="@drawable/ic_undo" />
 
     <ImageView
@@ -111,6 +110,8 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="83dp"
         android:layout_marginBottom="58dp"
+        android:visibility="invisible"
+        tools:visibility="visible"
         app:srcCompat="@drawable/ic_eraser" />
 
     <ImageView
@@ -120,6 +121,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="-3dp"
+
         app:srcCompat="@drawable/ic_addb" />
 
     <ImageView
@@ -141,5 +143,26 @@
         android:layout_marginEnd="50dp"
         android:layout_marginBottom="8dp"
         app:srcCompat="@drawable/ic_camera" />
+
+    <TextView
+        android:id="@+id/image_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="174dp"
+        android:layout_marginBottom="129dp" />
+
+    <CheckBox
+        android:id="@+id/checkBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="142dp"
+        android:layout_marginBottom="115dp"
+        android:text="CheckBox"
+        android:visibility="invisible" />
 
 </RelativeLayout>
