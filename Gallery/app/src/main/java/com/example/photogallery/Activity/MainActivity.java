@@ -2,6 +2,7 @@ package com.example.photogallery.Activity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.PorterDuff;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -69,10 +70,11 @@ import ja.burhanrashid52.photoeditor.ViewType;
 
 
 public class MainActivity extends AppCompatActivity implements BrushOptions.Properties, OnPhotoEditorListener {
-    private ImageView addPhoto;
 
-    private ImageView takePhoto;
-    private ImageView savePhoto;
+    //Home buttons
+    private ImageView btnAddPhoto;
+    private ImageView btnTakePhoto;
+    private ImageView btnSavePhoto;
 
     //Editing buttons
     private ImageView btnCrop;
@@ -82,11 +84,14 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private ImageView btnUndo;
     private ImageView btnRedo;
 
+    //Tags holder
     private LinearLayout linearLayout;
 
+    //Display the following message at home "Please Add Image", "Analyizing.."
     private TextView isImage;
     private TextView mImageDetails;
 
+    //Loading image view
     private SpinKitView loadView;
 
     // Set the request codes
@@ -110,21 +115,15 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private static final String ANDROID_CERT_HEADER = "X-Android-Cert";
     private static final int MAX_LABEL_RESULTS = 10;
 
-    private static String[] tags;
-    private static int counter;
-    private static int i = 0;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //Hide the top title bar
         getSupportActionBar().hide();
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
-        addPhoto = findViewById(R.id.btnAddButton);
-        takePhoto = findViewById(R.id.btnTake);
-        savePhoto = findViewById(R.id.btnSave);
         isImage = findViewById(R.id.tvImg);
         mPhotoEditorView = findViewById(R.id.photoEditorView);
         mImageDetails = findViewById(R.id.image_details);
@@ -133,14 +132,16 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         loadView = findViewById(R.id.spin_kit2);
         loadView.setVisibility(View.INVISIBLE);
 
-        //Edit buttons
+        //Buttons
         btnCrop = findViewById(R.id.btnCrop);
         btnErase = findViewById(R.id.btnErase);
         btnText = findViewById(R.id.btnText);
         btnDraw = findViewById(R.id.btnDraw);
         btnRedo = findViewById(R.id.btnRedo);
         btnUndo = findViewById(R.id.btnUndo);
-
+        btnAddPhoto = findViewById(R.id.btnAddButton);
+        btnTakePhoto = findViewById(R.id.btnTake);
+        btnSavePhoto = findViewById(R.id.btnSave);
 
         //Button onClickListeners
         btnDraw.setOnClickListener(new View.OnClickListener() {
@@ -158,19 +159,18 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             }
         });
 
+        btnRedo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPhotoEditor.redo();
+            }
+        });
 
         btnCrop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (selectedPhoto != null)
                     startCrop(selectedPhoto);
-            }
-        });
-
-        btnRedo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mPhotoEditor.redo();
             }
         });
 
@@ -196,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             }
         });
 
-        addPhoto.setOnClickListener(new View.OnClickListener() {
+        btnAddPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
@@ -217,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             }
         });
 
-        savePhoto.setOnClickListener(new View.OnClickListener() {
+        btnSavePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (selectedPhoto == null)
@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             }
         });
 
-        takePhoto.setOnClickListener(new View.OnClickListener() {
+        btnTakePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchTakePictureIntent();
@@ -331,8 +331,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     btnRedo.setVisibility(View.INVISIBLE);
                     btnUndo.setVisibility(View.INVISIBLE);
                     linearLayout.removeAllViews();
-
-                    Log.d("aftersave",mSaveImageUri.toString());
                     Toast.makeText(MainActivity.this, "저장 성공", Toast.LENGTH_SHORT).show();
                 }
 
@@ -475,7 +473,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             // Convert the bitmap to a JPEG
             // Just in case it's a format that Android understands but Cloud Vision
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
             byte[] imageBytes = byteArrayOutputStream.toByteArray();
 
             // Base64 encode the JPEG
@@ -528,7 +526,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             AsyncTask<Object, Void, String> labelDetectionTask = new LabelDetectionTask(this, prepareAnnotationRequest(bitmap));
             labelDetectionTask.execute();
         } catch (IOException e) {
-            Log.d(TAG, "failed to make API request because of other IOException " + e.getMessage());
+            Log.d(TAG, "failed to make API request because of other IOException" + e.getMessage());
         }
     }
 
