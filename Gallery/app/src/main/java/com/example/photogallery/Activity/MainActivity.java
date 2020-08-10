@@ -278,7 +278,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         return 0;
     }
 
-
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -325,6 +324,12 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     mPhotoEditorView.getSource().setImageURI(mSaveImageUri);
                     mPhotoEditorView.getSource().setImageBitmap(null);
                     isImage.setVisibility(View.VISIBLE);
+                    btnCrop.setVisibility(View.INVISIBLE);
+                    btnErase.setVisibility(View.INVISIBLE);
+                    btnText.setVisibility(View.INVISIBLE);
+                    btnDraw.setVisibility(View.INVISIBLE);
+                    btnRedo.setVisibility(View.INVISIBLE);
+                    btnUndo.setVisibility(View.INVISIBLE);
                     linearLayout.removeAllViews();
 
                     Log.d("aftersave",mSaveImageUri.toString());
