@@ -356,6 +356,8 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             switch (requestCode) {
                 case REQUEST_TAKE_PHOTO:
                     mPhotoEditor.clearAllViews();
+                    linearLayout.removeAllViews();
+                    mImageDetails.setVisibility(View.VISIBLE);
                     try {
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedPhoto);
                         mPhotoEditorView.getSource().setImageBitmap(bitmap);
@@ -383,6 +385,8 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                 case PICK_REQUEST:
                     try {
                         mPhotoEditor.clearAllViews();
+                        linearLayout.removeAllViews();
+                        mImageDetails.setVisibility(View.VISIBLE);
                         Uri uri = data.getData();
                         selectedPhoto = uri;
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
