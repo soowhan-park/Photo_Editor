@@ -2,10 +2,14 @@ package com.example.photogallery.GoogleVisionUtils;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.photogallery.Activity.MainActivity;
 import com.example.photogallery.R;
+import com.github.ybq.android.spinkit.SpinKitView;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
@@ -46,9 +50,20 @@ public class LabelDetectionTask extends AsyncTask<Object, Void, String> {
 
     protected void onPostExecute(String result) {
         MainActivity activity = mActivityWeakReference.get();
+        String[] gVision = result.split(",");
         if (activity != null && !activity.isFinishing()) {
+
+            LinearLayout linearLayout = activity.findViewById(R.id.linearlayout);
             TextView imageDetail = activity.findViewById(R.id.image_details);
-            imageDetail.setText(result);
+            SpinKitView loadView = activity.findViewById(R.id.spin_kit2);
+            loadView.setVisibility(View.GONE);
+            imageDetail.setVisibility(View.GONE);
+
+            for (int i = 0; i< gVision.length; i++){
+                CheckBox temp = new CheckBox(activity.getApplicationContext());
+                temp.setText(gVision[i]);
+                linearLayout.addView(temp);
+            }
         }
     }
 }

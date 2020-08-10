@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,6 +32,7 @@ import com.example.photogallery.Fragments.TextEditor;
 import com.example.photogallery.GoogleVisionUtils.LabelDetectionTask;
 import com.example.photogallery.GoogleVisionUtils.PackageManagerUtils;
 import com.example.photogallery.R;
+import com.github.ybq.android.spinkit.SpinKitView;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
@@ -80,11 +82,12 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private ImageView btnUndo;
     private ImageView btnRedo;
 
+    private LinearLayout linearLayout;
+
     private TextView isImage;
     private TextView mImageDetails;
 
-    private static CheckBox checkBox;
-
+    private SpinKitView loadView;
 
     // Set the request codes
     private static final int PICK_REQUEST = 1;
@@ -125,6 +128,10 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         isImage = findViewById(R.id.tvImg);
         mPhotoEditorView = findViewById(R.id.photoEditorView);
         mImageDetails = findViewById(R.id.image_details);
+        linearLayout = findViewById(R.id.linearlayout);
+
+        loadView = findViewById(R.id.spin_kit2);
+        loadView.setVisibility(View.INVISIBLE);
 
         //Edit buttons
         btnCrop = findViewById(R.id.btnCrop);
@@ -134,7 +141,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
         btnRedo = findViewById(R.id.btnRedo);
         btnUndo = findViewById(R.id.btnUndo);
 
-        checkBox = findViewById(R.id.checkBox);
 
         //Button onClickListeners
         btnDraw.setOnClickListener(new View.OnClickListener() {
@@ -230,10 +236,6 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
             }
         });
 
-       // mPhotoEditorView.getSource().setImageResource(R.drawable.ic_launcher_foreground);
-
-       // Typeface mTextRobotoTf = ResourcesCompat.getFont(this, R.font.roboto_medium);
-
 //loading font from assest
 
         mPhotoEditor = new PhotoEditor.Builder(this, mPhotoEditorView)
@@ -323,6 +325,8 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
                     mPhotoEditorView.getSource().setImageURI(mSaveImageUri);
                     mPhotoEditorView.getSource().setImageBitmap(null);
                     isImage.setVisibility(View.VISIBLE);
+                    linearLayout.removeAllViews();
+
                     Log.d("aftersave",mSaveImageUri.toString());
                     Toast.makeText(MainActivity.this, "저장 성공", Toast.LENGTH_SHORT).show();
                 }
@@ -491,22 +495,15 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     }
 
     public static String convertResponseToString(BatchAnnotateImagesResponse response) {
-        StringBuilder message = new StringBuilder("분석 결과:\n\n");
+        StringBuilder message = new StringBuilder();
         List<EntityAnnotation> labels = response.getResponses().get(0).getLabelAnnotations();
         if (labels != null) {
-            counter = labels.size();
-            tags = new String[counter];
-            for (i =0; i < 5; i++) {
-                if (labels.get(i).getDescription() == null || labels.get(i).getScore() == null)
-                    break;
-                else{
-                    message.append(String.format(Locale.US, "%.3f: %s", labels.get(i).getScore(), labels.get(i).getDescription()));
-                    message.append("\n");
-                    tags[i] = labels.get(i).getDescription();
-                }
+            for (EntityAnnotation label : labels) {
+                message.append(String.format(Locale.US, "%s", label.getDescription()));
+                message.append(",");
+                //message.append(String.format(Locale.US, "%.3f: %s", labels.get(i).getScore(), labels.get(i).getDescription()));
+                //message.append("\n");
             }
-            Log.d("tags",tags[0] + tags[1]);
-            i = 0;
         } else {
             message.append("nothing");
         }
@@ -516,6 +513,7 @@ public class MainActivity extends AppCompatActivity implements BrushOptions.Prop
     private void callCloudVision(final Bitmap bitmap) {
         // Switch text to loading
         mImageDetails.setText(R.string.loading_message);
+        loadView.setVisibility(View.VISIBLE);
         // Do the real work in an async task, because we need to use the network anyway
         try {
             AsyncTask<Object, Void, String> labelDetectionTask = new LabelDetectionTask(this, prepareAnnotationRequest(bitmap));
